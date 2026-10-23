@@ -4155,7 +4155,10 @@
 
   function waANumber(r) {
     if (!r) return "";
-    if (r.a != null && String(r.a).trim() !== "" && isFinite(Number(r.a))) return String(parseInt(r.a, 10));
+    if (r.a != null) {
+      const direct = String(r.a).trim();
+      if (/^[0-9]{1,12}$/.test(direct)) return direct.replace(/^0+/, "") || "0";
+    }
     const blob = [r.u, r.url, r.href, r.t, r.title].map(function (x) { return String(x || ""); }).join(" ");
     const m = blob.match(/\bA\.?\s*No\.?\s*(\d{1,7})\b/i) || blob.match(/\bA(\d{2,7})\b/);
     return m ? m[1] : "";
@@ -4164,13 +4167,17 @@
   function nswReportId(u) {
     const s = String(u || "");
     const m = s.match(/search\.geoscience\.nsw\.gov\.au\/report\/([^/?#]+)/i);
-    return m ? decodeURIComponent(m[1]) : "";
+    if (!m) return "";
+    try { return decodeURIComponent(m[1]); }
+    catch (_) { return ""; }
   }
 
   function qldReportPath(u) {
     const s = String(u || "");
     const m = s.match(/geoscience\.data\.qld\.gov\.au\/(?:data\/)?(?:dataset|report)\/([^/?#]+)/i);
-    return m ? decodeURIComponent(m[1]) : "";
+    if (!m) return "";
+    try { return decodeURIComponent(m[1]); }
+    catch (_) { return ""; }
   }
 
   function reportHref(r) {
@@ -4195,13 +4202,27 @@
     }
 
     if (st === "qld") {
-      const id = qldReportPath(raw) || r.id || "";
-      if (id && /^cr\d+/i.test(String(id))) {
-        return "https://geoscience.data.qld.gov.au/data/report/" + encodeURIComponent(String(id));
+      const directId = qldReportPath(raw);
+      if (directId) {
+        if (/^cr[0-9]+$/i.test(directId)) {
+          return "https://geoscience.data.qld.gov.au/data/report/" + encodeURIComponent(directId);
+        }
+        return "https://geoscience.data.qld.gov.au/data/dataset/" + encodeURIComponent(directId);
       }
-      if (id) return "https://geoscience.data.qld.gov.au/data/dataset/" + encodeURIComponent(String(id));
+
+      // Keep a specific harvested source URL instead of overwriting it
+      // with a fabricated catalogue address from an unrelated internal ID.
       const u = safeHttpUrl(raw);
-      return u && !isPortalHomeOnly(u, "qld") ? u : "";
+      if (u && !isPortalHomeOnly(u, "qld")) return u;
+
+      const id = String(r.id || "").trim();
+      if (/^cr[0-9]+$/i.test(id)) {
+        return "https://geoscience.data.qld.gov.au/data/report/" + encodeURIComponent(id);
+      }
+      if (/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id)) {
+        return "https://geoscience.data.qld.gov.au/data/dataset/" + encodeURIComponent(id);
+      }
+      return "";
     }
 
     const u = safeHttpUrl(raw);
