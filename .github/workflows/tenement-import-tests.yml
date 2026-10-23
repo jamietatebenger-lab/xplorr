@@ -6,6 +6,8 @@ on:
       - "tools/tenement_dump_audit.py"
       - "tools/nt_tenement_live_wfs_pull.py"
       - "tools/test_tenement_dump_audit.py"
+      - "tools/deterministic_tenement_validation.py"
+      - "tools/test_deterministic_tenement_validation.py"
       - ".github/workflows/tenement-import-tests.yml"
   push:
     branches:
@@ -14,6 +16,8 @@ on:
       - "tools/tenement_dump_audit.py"
       - "tools/nt_tenement_live_wfs_pull.py"
       - "tools/test_tenement_dump_audit.py"
+      - "tools/deterministic_tenement_validation.py"
+      - "tools/test_deterministic_tenement_validation.py"
       - ".github/workflows/tenement-import-tests.yml"
   workflow_dispatch:
 
@@ -29,6 +33,6 @@ jobs:
         with:
           python-version: "3.12"
       - name: Syntax check
-        run: python -m compileall -q tools/tenement_dump_audit.py tools/nt_tenement_live_wfs_pull.py tools/test_tenement_dump_audit.py
+        run: python -m compileall -q tools/tenement_dump_audit.py tools/nt_tenement_live_wfs_pull.py tools/test_tenement_dump_audit.py tools/deterministic_tenement_validation.py tools/test_deterministic_tenement_validation.py
       - name: Unit tests - no network
-        run: python -m unittest discover -s tools -p 'test_tenement_dump_audit.py' -v
+        run: python -m unittest discover -s tools -p 'test_*tenement*.py' -v
