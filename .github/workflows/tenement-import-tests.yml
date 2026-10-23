@@ -1,0 +1,34 @@
+name: Official Tenement Import Tests
+
+on:
+  pull_request:
+    paths:
+      - "tools/tenement_dump_audit.py"
+      - "tools/nt_tenement_live_wfs_pull.py"
+      - "tools/test_tenement_dump_audit.py"
+      - ".github/workflows/tenement-import-tests.yml"
+  push:
+    branches:
+      - "audit/official-tenement-csv-json-live-20261024"
+    paths:
+      - "tools/tenement_dump_audit.py"
+      - "tools/nt_tenement_live_wfs_pull.py"
+      - "tools/test_tenement_dump_audit.py"
+      - ".github/workflows/tenement-import-tests.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  offline-evidence-tests:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Syntax check
+        run: python -m compileall -q tools/tenement_dump_audit.py tools/nt_tenement_live_wfs_pull.py tools/test_tenement_dump_audit.py
+      - name: Unit tests - no network
+        run: python -m unittest discover -s tools -p 'test_tenement_dump_audit.py' -v
