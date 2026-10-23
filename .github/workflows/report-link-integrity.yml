@@ -1,0 +1,32 @@
+name: Verify report catalogue links
+
+on:
+  pull_request:
+    paths:
+      - "app.js"
+      - "tools/report_urls.py"
+      - "tools/test_report_urls_offline.py"
+      - "tools/test_report_urls_browser.cjs"
+      - ".github/workflows/report-link-integrity.yml"
+  push:
+    branches: ["main"]
+    paths:
+      - "app.js"
+      - "tools/report_urls.py"
+      - "tools/test_report_urls_offline.py"
+      - "tools/test_report_urls_browser.cjs"
+
+permissions:
+  contents: read
+
+jobs:
+  report-links:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Python link contract tests
+        run: python3 -m unittest discover -s tools -p "test_report_urls_offline.py" -v
+      - name: JavaScript syntax check
+        run: node --check app.js
+      - name: Browser link contract tests (offline)
+        run: node tools/test_report_urls_browser.cjs
