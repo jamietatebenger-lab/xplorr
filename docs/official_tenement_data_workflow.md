@@ -96,3 +96,61 @@ Offline tests:
     python -m unittest discover -s tools -p 'test_tenement_dump_audit.py' -v
 
 No official registers are modified. Testing does not require network access.
+
+
+## Deterministic, no-LLM validation of source dumps
+
+The Python 3 standard-library checker is tools/deterministic_tenement_validation.py.
+It reads source files directly, calculates their SHA-256 fingerprints and checks
+assertions using exactly matched title IDs, explicit applicant/holder/agent roles,
+verbatim status fields and Australian ABN/ACN checksums.
+
+Prepare claims.json as a JSON array:
+
+    [
+      {"title_id":"ML25978","holder":"John Benger","role":"Applicant","status":"Application"},
+      {"title_id":"ML25978","holder":"John Benger","role":"Holder","status":"Grant"},
+      {"title_id":"EL31896","holder":"Tivan Limited","role":"Holder","status":"Grant"}
+    ]
+
+Run against an ORIGINAL agency-downloaded file:
+
+    python tools/deterministic_tenement_validation.py \
+      --source raw/nt-mineraltenements.geojson \
+      --claims claims.json --state NT \
+      --output evidence/strict_checks.json
+
+If a trusted independent source has provided a SHA-256 fingerprint, add:
+
+    --expected-sha256 <64-hexadecimal-character-value>
+
+The checker refuses to process that comparison if the hash mismatches.
+Never claim that a checksum matching one of your OWN manifests proves the
+publisher issued the document.
+
+Classification output:
+- MATCHES_PROVIDED_DATA: assertion agrees with locally supplied records only.
+- CHECK_FAILED: explicit disagreement (e.g., a source Applicant called Holder).
+- SOURCE_CONFLICT: contradictory records or known EL31896 cessation issue.
+- NOT_IN_PROVIDED_DATA: missing from the bounded source, not necessarily absent
+  from any other register.
+
+ABN rule comes from Australian Business Register (weighted modulus 89):
+https://abr.business.gov.au/Help/AbnFormat
+
+ACN rule comes from ASIC (weighted modulus 10):
+https://asic.gov.au/for-business/registering-a-company/steps-to-register-a-company/australian-company-numbers/australian-company-number-digit-check/
+
+The tenement regexes cover typical patterns only; UNKNOWN_TITLE_SYNTAX is NOT
+proof of a fictitious title. All exact name matching is conservative: corporate
+suffixes are never silently stripped, and one party's interest is never
+transferred to another based on surname or acronym alone.
+
+Offline tests (existing importer + deterministic checks):
+
+    python -m unittest discover -s tools -p 'test_*tenement*.py' -v
+
+Governments change live spatial layers and registered-title details. A true
+legal statement of active title ownership requires the statutory register,
+including approvals, dealings, restrictions and cessation dates. NO script
+can establish unpaid personal royalties from GIS tenement data alone.
